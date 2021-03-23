@@ -1,46 +1,80 @@
-## Data Warehouse and ETL from  with Python
+# Cloud Data Warehouse
 
-### Brief
-The purpose of this project is to help Sparkify move their processes and data onto the cloud. Their data resides in S3, in a directory of JSON logs on user activity on the app, as well as a directory with JSON metadata on the songs in their app. 
+## Overview
 
-ETL pipeline is built to extract log data and song data from s3 and stages them in Redshift. A star schema optimised for queries on song play analysis, which is to analyze the data they've been collecting on songs and user activity on their new music streaming app. The team is particularly interested in understanding what songs users are listening to.
+The purpose of this project is to help music streaming app Sparkify move their data onto the cloud dataware house from S3.
 
-A star schema with a fact table songplays, which contains records in log data associated with song plays. Also four dimension tables users, songs, artists, time are respectively storaging users in the app, songs in music database, artists in music database, and timestamps of records in songplays broken down into specific time units. 
+ETL pipeline is built to extract log data and song data from S3 and stages them in PostgreSQL hosted on AWS Redshift. A star schema optimised for queries on _song play_ analytics table, which is to analyse songs and user log data on their new music streaming app. The team is particularly interested in understanding what songs users are listening to.
 
-After creating four dimension tables, artist id and song id are found based on title, name, duration of the song from log data to create fact table. 
+## Project Structure
 
-The team can simply query "SELECT COUNT(song_id) FROM songplays ORDER BY DESC LIMIT 10;" to tell top 10 songs played by users.
+The project contains the following components: 
 
-### Tables Description
+- `create_tables.py` creates Sparify star schema in Redshift
+- `etl.py` run ETL pipeline from S3 and load into staging tables on AWS Redshift
+- `sql_queries.py` SQL queries that underpin the creation of star schme and ETL pipeline
 
-**Staging Tables(1): staging_songs**
-It contains *artist_id*, *artist_latitude numeric*, *artist_longitude numeric*, *artist_location*, *artist_name*, *song_id*, *title*, *duration*, *year*. Which is a table COPY from s3 to Redshift and stage on Redshift. 
+## Star Schema
 
-**Staging Tables(2): staging_events**
-It contains *artist*, *auth*, *firstName*, *gender*, *itemInSession*, *lastName*, *length*, *level*, *location*, *method*, *page*, *registration*, *sessionId*, *song*, *status*, *ts*, *userAgent*, *userId*. Which is another staging table COPY from s3 to Redshift. 
+The database has following tables:
 
-**Face Table: songplays**
-It contains *songplay_id*, *start_time*, *user_id*, *level*, *song_id*, *artist_id*, *session_id*, *location*, *user_agent*. 
-data are exported from staging tables. 
+- `songplays` user songs plays 
 
-**Dimesion Table**
-**songs**
-It contains *song_id*, *title*, *artist_id*, *year*, *duration*.
-Data are extracted from staging tables. 
-**artists**
-It contains *artist_id*, *name*, *location*, *latitude*, *longitude*.
-Data are extracted from staging tables. 
-**users**
-It contains *user_id*, *first_name*, *last_name*, *gender*, *level*.
-Data are extracted from staging tables. 
-**time**
-It contains *start_time*, *hour*, *day*, *week*, *month*, *year*, *weekday*
-Timestamps of records in songplays broken down into specific units
+which is fact table has foreign keys to following dimension tables:
 
-### Files Description
-**sql_queries.py**
-The file contains all sql queries for tables creation, load data, and data insert.
-**create_tables.py**
-Run this file to connect into Redshift and create tables.
-**etl.py**
-Run this file to process songs and log data from s3 and create a ETL pipeline in order to move it to redshift. 
+- `songs ` songs data
+- `artists ` artists data
+- `users` users data in the app
+- `time` timestamps of records broken down into time units
+
+| Tables    | Columns                                                      |
+| --------- | ------------------------------------------------------------ |
+| songplays | *songplay_id*, *start_time*, *user_id*, *level*, *song_id*, *artist_id*, *session_id*, *location*, *user_agent* |
+| songs     | *song_id*, *title*, *artist_id*, *year*, *duration*          |
+| artists   | *artist_id*, *name*, *location*, *latitude*, *longitude*     |
+| users     | *user_id*, *first_name*, *last_name*, *gender*, *level*      |
+| time      | *start_time*, *hour*, *day*, *week*, *month*, *year*, *weekday* |
+
+## Instructions
+
+You will need to create a configuration file with the file name `dwh.cfg` and the following structure: **file should not be pushed into repo or added it into .gitignore**
+
+```
+[CLUSTER]
+HOST=<your_host>
+DB_NAME=<your_db_name>
+DB_USER=<your_db_user>
+DB_PASSWORD=<your_db_password>
+DB_PORT=<your_db_port>
+DB_REGION=<your_db_region>
+CLUSTER_IDENTIFIER=<your_cluster_identifier>
+
+[IAM_ROLE]
+ARN=<your_iam_role_arn>
+
+[S3]
+LOG_DATA='s3://udacity-dend/log_data'
+LOG_JSONPATH='s3://udacity-dend/log_json_path.json'
+SONG_DATA='s3://udacity-dend/song_data'
+
+[AWS]
+ACCESS_KEY=<your_access_key>
+SECRET_KEY=<your_secret_key>
+```
+
+**To run ETL pipeline, run code from commind line in the project home directory:**
+
+```
+python3 create_tables.py
+python3 etl.py
+```
+
+## Query Example
+
+Once the database is created, you can test out queries in Redshift console 
+
+```sql
+SELECT COUNT(song_id) FROM songplays ORDER BY DESC LIMIT 10;
+```
+
+To find out top 10 songs played by users.
